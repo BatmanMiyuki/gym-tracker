@@ -9,12 +9,15 @@ import {
   Calendar,
   BarChart2,
   PieChart,
-  ArrowUpRight,
   Activity,
   Award,
+  Zap,
+  Shield,
+  Sparkles,
 } from 'lucide-react';
+import { RANKS } from '../utils/bodyRank';
 
-export default function StatsPage({ stats = null }) {
+export default function StatsPage({ stats = null, bodyRankData = null, onNavigateToBodyRank }) {
   if (!stats || !stats.overview) {
     return (
       <div className="py-20 text-center text-zinc-400">
@@ -32,13 +35,19 @@ export default function StatsPage({ stats = null }) {
     personal_records = [],
   } = stats;
 
+  const {
+    globalLevel = 1,
+    globalRank = RANKS[0],
+    totalXP = 0,
+    muscleScores = {},
+  } = bodyRankData || {};
+
   const exerciseNames = Object.keys(exercise_progressions).sort();
   const [selectedExercise, setSelectedExercise] = useState(
     exerciseNames[0] || 'Développé couché'
   );
 
-  const currentExProgression =
-    exercise_progressions[selectedExercise] || null;
+  const currentExProgression = exercise_progressions[selectedExercise] || null;
 
   // Max volume for volume timeline scaling
   const maxSessionVolume = Math.max(
@@ -46,7 +55,6 @@ export default function StatsPage({ stats = null }) {
     1
   );
 
-  // Helper date formatter
   const formatDateShort = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -95,6 +103,50 @@ export default function StatsPage({ stats = null }) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      {/* BodyRank Mini Banner in Stats */}
+      <div
+        onClick={onNavigateToBodyRank}
+        className="cursor-pointer group relative overflow-hidden rounded-3xl bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 border border-zinc-800 p-5 shadow-xl hover:border-emerald-500/50 transition-all flex flex-col sm:flex-row items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black shadow-lg border"
+            style={{
+              backgroundColor: globalRank.bg,
+              borderColor: globalRank.border,
+              color: globalRank.color,
+            }}
+          >
+            <span className="text-xl font-black">{globalRank.id}</span>
+            <span className="text-[8px] font-bold uppercase">{globalRank.name}</span>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                Système BodyRank Actif
+              </span>
+              <span className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full font-mono">
+                {totalXP.toLocaleString('fr-FR')} XP
+              </span>
+            </div>
+            <h3 className="font-black text-xl text-white">
+              Niveau {globalLevel} • Rang {globalRank.name}
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Voir la carte anatomique interactive et le statut des 15 muscles ➔
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="px-4 py-2 rounded-xl bg-emerald-500 text-black font-black text-xs group-hover:bg-emerald-400 transition-colors whitespace-nowrap shadow-md"
+        >
+          Inspecter BodyRank 🧍‍♂️
+        </button>
+      </div>
+
       {/* KPI Highlight Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Total Sessions */}
@@ -158,14 +210,14 @@ export default function StatsPage({ stats = null }) {
           <div>
             <h3 className="font-black text-base text-white flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-emerald-400" />
-              <span>Volume Total soulevé par séance (kg)</span>
+              <span>Volume Total Soulevé par Séance (kg)</span>
             </h3>
             <p className="text-xs text-zinc-400">
-              Évolution de la charge de travail au fil de vos journées à la salle
+              Charge de travail accumulée à chaque entraînement
             </p>
           </div>
           <span className="text-xs font-mono font-bold text-emerald-400">
-            {volume_timeline.length} journées
+            {volume_timeline.length} séances
           </span>
         </div>
 
@@ -180,7 +232,7 @@ export default function StatsPage({ stats = null }) {
                   className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group relative"
                 >
                   {/* Tooltip on hover */}
-                  <div className="absolute -top-10 bg-black/90 border border-zinc-700 px-2 py-1 rounded-md text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg font-mono">
+                  <div className="absolute -top-10 bg-black/95 border border-zinc-700 px-2.5 py-1 rounded-xl text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl font-mono">
                     {v.title} : {v.volume_kg.toLocaleString('fr-FR')} kg
                   </div>
 
@@ -213,10 +265,10 @@ export default function StatsPage({ stats = null }) {
           <div>
             <h3 className="font-black text-base text-white flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-400" />
-              <span>Courbe d'Évolution de la Force par Exercice</span>
+              <span>Courbe d'Évolution de la Charge Max par Exercice</span>
             </h3>
             <p className="text-xs text-zinc-400">
-              Sélectionnez un exercice pour voir l'évolution de vos charges max (kg)
+              Progression de vos records (kg) et charge maximale soulevée
             </p>
           </div>
 
@@ -240,7 +292,7 @@ export default function StatsPage({ stats = null }) {
               <span className="text-[10px] uppercase font-bold text-zinc-400 block">
                 Charge Max (PR)
               </span>
-              <span className="font-black text-lg text-emerald-400">
+              <span className="font-black text-lg text-emerald-400 font-mono">
                 {currentExProgression.max_weight} kg
               </span>
             </div>
@@ -249,7 +301,7 @@ export default function StatsPage({ stats = null }) {
               <span className="text-[10px] uppercase font-bold text-zinc-400 block">
                 1RM Estimé
               </span>
-              <span className="font-black text-lg text-cyan-400">
+              <span className="font-black text-lg text-cyan-400 font-mono">
                 {currentExProgression.best_1rm} kg
               </span>
             </div>
@@ -258,7 +310,7 @@ export default function StatsPage({ stats = null }) {
               <span className="text-[10px] uppercase font-bold text-zinc-400 block">
                 Séances pratiquées
               </span>
-              <span className="font-black text-lg text-zinc-200">
+              <span className="font-black text-lg text-zinc-200 font-mono">
                 {currentExProgression.history.length}
               </span>
             </div>
@@ -267,7 +319,7 @@ export default function StatsPage({ stats = null }) {
               <span className="text-[10px] uppercase font-bold text-zinc-400 block">
                 Volume Cumulé
               </span>
-              <span className="font-black text-lg text-amber-400">
+              <span className="font-black text-lg text-amber-400 font-mono">
                 {(currentExProgression.total_volume / 1000).toFixed(1)} t
               </span>
             </div>
@@ -361,7 +413,7 @@ export default function StatsPage({ stats = null }) {
         )}
       </div>
 
-      {/* Two Columns: Muscle Groups & PR Table */}
+      {/* Two Columns: Muscle Distribution & PR Table */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Muscle Group Distribution */}
         <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-5 shadow-xl space-y-4">

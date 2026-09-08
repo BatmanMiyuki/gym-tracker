@@ -1,19 +1,23 @@
 // src/App.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Navbar from './components/Navbar';
 import WorkoutList from './components/WorkoutList';
 import WorkoutForm from './components/WorkoutForm';
 import StatsPage from './components/StatsPage';
+import BodyRankViewer from './components/BodyRankViewer';
+import AchievementsModal from './components/AchievementsModal';
 import { api } from './api';
+import { calculateBodyRanks } from './utils/bodyRank';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'form' | 'stats'
+  const [activeTab, setActiveTab] = useState('bodyrank'); // 'bodyrank' | 'list' | 'form' | 'stats'
   const [workouts, setWorkouts] = useState([]);
   const [stats, setStats] = useState(null);
   const [presets, setPresets] = useState([]);
   const [editingWorkout, setEditingWorkout] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   // Show temporary toast notification
   const showToast = (msg) => {
@@ -34,13 +38,18 @@ export default function App() {
       setPresets(presetsData);
     } catch (err) {
       console.error('Erreur de chargement', err);
-      showToast('⚠️ Erreur de communication avec le serveur API');
+      showToast('⚠️ Mode LocalStorage / Hors-ligne actif');
     }
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Compute dynamic Liftoff BodyRank data across all 15 muscle groups
+  const bodyRankData = useMemo(() => {
+    return calculateBodyRanks(workouts);
+  }, [workouts]);
 
   // Open form to add a new workout
   const handleOpenNewWorkout = () => {
@@ -76,7 +85,7 @@ export default function App() {
 
       await api.createWorkout(duplicated);
       await loadData();
-      showToast('✅ Séance dupliquée pour aujourd’hui !');
+      showToast('⚡ Séance dupliquée + XP attribués !');
       setActiveTab('list');
     } catch (err) {
       showToast(`❌ ${err.message}`);
@@ -94,11 +103,11 @@ export default function App() {
         showToast('✅ Séance mise à jour avec succès !');
       } else {
         await api.createWorkout(workoutData);
-        showToast('✅ Séance enregistrée avec succès !');
+        showToast('🔥 Séance enregistrée ! XP BodyRank gagnés !');
       }
       await loadData();
       setEditingWorkout(null);
-      setActiveTab('list');
+      setActiveTab('bodyrank');
     } catch (err) {
       showToast(`❌ ${err.message}`);
     } finally {
@@ -124,7 +133,7 @@ export default function App() {
   const handleResetData = async () => {
     if (
       confirm(
-        'Voulez-vous réinitialiser l’historique aux séances de démonstration (Avril à Septembre 2026) ?'
+        'Voulez-vous réinitialiser l’historique aux séances de démonstration depuis Avril 2026 ?'
       )
     ) {
       try {
@@ -139,7 +148,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-black">
-      {/* Navigation Header */}
+      {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
         onSelectTab={(tab) => {
@@ -147,7 +156,10 @@ export default function App() {
           setActiveTab(tab);
         }}
         onOpenNewWorkout={handleOpenNewWorkout}
+        onOpenAchievements={() => setShowAchievements(true)}
         onResetData={handleResetData}
+        globalRank={bodyRankData.globalRank}
+        globalLevel={bodyRankData.globalLevel}
       />
 
       {/* Toast Notification */}
@@ -157,8 +169,17 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Container */}
+      {/* Main App Body */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6">
+        {activeTab === 'bodyrank' && (
+          <BodyRankViewer
+            bodyRankData={bodyRankData}
+            onSelectExercise={(exName) => {
+              // Quick action if needed
+            }}
+          />
+        )}
+
         {activeTab === 'list' && (
           <WorkoutList
             workouts={workouts}
@@ -176,18 +197,33 @@ export default function App() {
             onSave={handleSaveWorkout}
             onCancel={() => {
               setEditingWorkout(null);
-              setActiveTab('list');
+              setActiveTab('bodyrank');
             }}
             isLoading={isLoading}
           />
         )}
 
-        {activeTab === 'stats' && <StatsPage stats={stats} />}
+        {activeTab === 'stats' && (
+          <StatsPage
+            stats={stats}
+            bodyRankData={bodyRankData}
+            onNavigateToBodyRank={() => setActiveTab('bodyrank')}
+          />
+        )}
       </main>
 
+      {/* Achievements RPG Modal */}
+      {showAchievements && (
+        <AchievementsModal
+          workouts={workouts}
+          bodyRankData={bodyRankData}
+          onClose={() => setShowAchievements(false)}
+        />
+      )}
+
       {/* Footer */}
-      <footer className="border-t border-zinc-900 py-5 text-center text-xs text-zinc-500">
-        <p>GYM TRACKER Full-Stack • Node.js + Express API • Base de données persistante</p>
+      <footer className="border-t border-zinc-900 py-6 text-center text-xs text-zinc-500">
+        <p>LIFTOFF • BodyRank Fitness System • Node.js Express API & React</p>
       </footer>
     </div>
   );
