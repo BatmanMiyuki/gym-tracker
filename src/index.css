@@ -4,7 +4,7 @@
   :root {
     --color-primary: #10b981;
     --color-primary-dark: #059669;
-    --color-accent: #6366f1;
+    --color-accent: #06b6d4;
   }
   
   body {
@@ -12,14 +12,15 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    background-color: #08080a;
   }
 
-  input, textarea {
+  input, textarea, select {
     user-select: auto;
   }
 }
 
-/* Custom scrollbar */
+/* Custom sleek scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -35,16 +36,34 @@
   background: #3f3f46;
 }
 
-/* Pulse animation for active rest timer */
-@keyframes timer-glow {
+/* Glowing Neon animations */
+@keyframes neon-glow {
   0%, 100% {
     box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
   }
   50% {
-    box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.8);
   }
 }
 
-.timer-active {
-  animation: timer-glow 2s infinite ease-in-out;
+.neon-active {
+  animation: neon-glow 2s infinite ease-in-out;
+}
+
+/* Subtle Shimmer for XP / Tier bars */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.animate-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2.5s infinite;
 }
