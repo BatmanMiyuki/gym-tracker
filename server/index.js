@@ -1,7 +1,13 @@
 // server/index.js
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DIST_PATH = path.join(__dirname, '..', 'dist');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -175,6 +181,10 @@ app.post('/api/clear', (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 API Gym Server running on http://0.0.0.0:${PORT}`);
+// Serve static build if available
+app.use(express.static(DIST_PATH));
+
+// Bind API server strictly to 127.0.0.1 (internal loopback) so only Vite dev server is exposed to the preview iframe
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`🚀 Internal API Gym Server running on http://127.0.0.1:${PORT}`);
 });
